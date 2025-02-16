@@ -1,0 +1,12 @@
+streamlit
+pandas
+numpy
+sqlalchemy
+pydantic
+pydantic[email]
+fastapi
+uvicorn
+python-dateutil
+alembic  # per le migrazioni del database
+psycopg2-binary  # se usi PostgreSQL
+python-dotenv
