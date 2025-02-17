@@ -1,7 +1,6 @@
 from pydantic import BaseModel, Field, field_validator, ValidationInfo
-from typing import Annotated
+from typing import Annotated, Optional, List
 from datetime import date
-from typing import Optional, List
 from decimal import Decimal
 
 class InvoiceLineItemBase(BaseModel):
@@ -32,7 +31,7 @@ class InvoiceBase(BaseModel):
     due_date: date = None
     amount: Annotated[Decimal, Field(max_digits=10, decimal_places=2)]
     notes: Optional[str] = None
-    line_items: List[InvoiceLineItemBase]
+    line_items: List[InvoiceLineItemBase] = None
 
 class InvoiceCreate(InvoiceBase):
     pass
@@ -43,10 +42,19 @@ class InvoiceUpdate(BaseModel):
     paid_date: Optional[date] = None
     notes: Optional[str] = None
 
-class InvoiceResponse(InvoiceBase):
+class InvoiceResponseNoItems(BaseModel):
     id: int
+    project_id: int
+    invoice_number: str
+    invoice_date: date
+    due_date: date
+    amount: Annotated[Decimal, Field(max_digits=10, decimal_places=2)]
+    notes: Optional[str] = None
     paid: bool = False
     paid_date: Optional[date] = None
     
     class Config:
         orm_mode = True
+
+class InvoiceResponse(InvoiceResponseNoItems):
+    line_items: List[InvoiceLineItemBase] = []

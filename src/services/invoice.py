@@ -28,3 +28,7 @@ class InvoiceService(BaseService[Invoice, InvoiceCreate, InvoiceUpdate]):
             .filter(self.model.paid == False)\
             .filter(self.model.due_date <= date.today())\
             .all()
+
+    def get_by_project(self, db: Session, project_id: int) -> List[Invoice]:
+        query = db.query(Invoice).filter(Invoice.project_id == project_id)
+        return query.all()
