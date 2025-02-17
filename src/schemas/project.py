@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field
 from datetime import datetime
 from typing import Optional, List
 from decimal import Decimal
+from src.models.models import ProjectStatus, BillingType
 
 class ProjectBase(BaseModel):
     name: str
@@ -10,8 +11,8 @@ class ProjectBase(BaseModel):
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     budget: Optional[float] = None
-    status: str = "active"
-    billing_type: str = "time_and_materials"
+    status: ProjectStatus = ProjectStatus.ACTIVE
+    billing_type: BillingType = BillingType.FIXED_PRICE
     billing_currency: str = "EUR"
     billing_notes: Optional[str] = None
 

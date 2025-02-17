@@ -24,6 +24,10 @@ class ResourceAllocationStatus(enum.Enum):
     ACTIVE = "active"
     COMPLETED = "completed"
 
+class BillingType(enum.Enum):
+        TIME_AND_MATERIALS = "time_and_materials"
+        FIXED_PRICE = "fixed_price"
+
 class User(Base):
     __tablename__ = "users"
     
@@ -78,7 +82,7 @@ class Project(Base):
     end_date = Column(DateTime)
     budget = Column(Float)
     status = Column(Enum(ProjectStatus), nullable=False, default=ProjectStatus.DRAFT)
-    billing_type = Column(String)  # "time_and_materials", "fixed_price"
+    billing_type = Column(Enum(BillingType), nullable=False)
     billing_currency = Column(String, default="EUR")
     billing_notes = Column(String)
     
