@@ -1,4 +1,4 @@
-from typing import List
+from typing import List, Optional
 from datetime import date, datetime
 from sqlalchemy.orm import Session
 from sqlalchemy import func
@@ -14,15 +14,20 @@ class TimeEntryService(BaseService[TimeEntry, TimeEntryCreate, TimeEntryUpdate])
         self, 
         db: Session, 
         user_id: int, 
-        start_date: date, 
-        end_date: date
+        start_date: Optional[date] = None, 
+        end_date: Optional[date] = None
     ) -> List[TimeEntry]:
-        return db.query(self.model)\
-            .filter(
-                self.model.user_id == user_id,
-                self.model.date >= start_date,
-                self.model.date <= end_date
-            ).all()
+        """
+        Recupera le time entry di un utente, opzionalmente filtrate per data.
+        """
+        query = db.query(self.model).filter(self.model.user_id == user_id)
+        
+        if start_date:
+            query = query.filter(self.model.date >= start_date)
+        if end_date:
+            query = query.filter(self.model.date <= end_date)
+            
+        return query.all()
             
     def get_by_project(self, db: Session, project_id: int) -> List[TimeEntry]:
         return db.query(self.model)\
