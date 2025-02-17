@@ -9,7 +9,7 @@ class UserBase(BaseModel):
     hourly_rate: Optional[float] = None
 
 class UserCreate(UserBase):
-    pass
+    password: str
 
 class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None

@@ -11,18 +11,37 @@ from src.auth.security import (
     get_password_hash
 )
 from src.schemas.user import UserBase, UserCreate
+from src.schemas.auth import Token
 from src.models.models import User
 from datetime import timedelta
 
 router = APIRouter()
 
-@router.post("/token")
+@router.post("/token", response_model=Token, 
+    responses={
+        200: {
+            "model": Token,
+            "description": "Token di accesso generato con successo"
+        },
+        401: {
+            "description": "Credenziali non valide"
+        }
+    }
+)
 async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db)
 ):
-    user = db.query(User).filter(User.email == form_data.username).first()
-    if not user or not verify_password(form_data.password, user.password_hash):
+    """
+    Ottieni un token di accesso.
+    
+    - **username**: email dell'utente
+    - **password**: password dell'utente
+    """
+    username = form_data.username
+    password = form_data.password
+    user = db.query(User).filter(User.email == username).first()
+    if not user or not verify_password(password, user.password_hash):
         raise HTTPException(
             status_code=401,
             detail="Email o password non corretti"
