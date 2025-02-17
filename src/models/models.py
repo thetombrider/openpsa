@@ -41,6 +41,7 @@ class User(Base):
     id = Column(Integer, primary_key=True)
     email = Column(String, unique=True, nullable=False)
     name = Column(String, nullable=False)
+    password_hash = Column(String, nullable=False)  # Aggiungi questo
     role = Column(Enum(UserRole), nullable=False)
     hourly_rate = Column(Float)
     created_at = Column(DateTime, default=datetime.utcnow)

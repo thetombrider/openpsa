@@ -10,3 +10,6 @@ python-dateutil
 alembic  # per le migrazioni del database
 psycopg2-binary  # se usi PostgreSQL
 python-dotenv
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart
