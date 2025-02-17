@@ -29,7 +29,7 @@ async def get_project_invoices(
     response_model = InvoiceResponse if include_line_items else InvoiceResponseNoItems
     return [response_model.model_validate(invoice, from_attributes=True) for invoice in invoices]
 
-@router.get("/unpaid", response_model=List[InvoiceResponse])
+@router.get("/unpaid", response_model=List[InvoiceResponseNoItems])
 async def get_unpaid_invoices(
     db: Session = Depends(get_db)
 ):
