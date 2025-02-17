@@ -37,7 +37,9 @@ class InvoiceCreate(InvoiceBase):
     pass
 
 class InvoiceUpdate(BaseModel):
+    invoice_date: Optional[date] = None
     due_date: Optional[date] = None
+    amount: Optional[Decimal] = None
     paid: Optional[bool] = None
     paid_date: Optional[date] = None
     notes: Optional[str] = None

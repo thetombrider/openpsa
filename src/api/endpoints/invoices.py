@@ -34,3 +34,39 @@ async def get_unpaid_invoices(
     db: Session = Depends(get_db)
 ):
     return service.get_unpaid_invoices(db)
+
+@router.put("/{invoice_id}", response_model=InvoiceResponse)
+async def update_invoice(
+    invoice_id: int,
+    invoice: InvoiceUpdate,
+    db: Session = Depends(get_db)
+):
+    """
+    Aggiorna una fattura esistente.
+    Solleva 404 se la fattura non esiste.
+    """
+    updated_invoice = service.update(db, invoice_id, invoice)
+    if not updated_invoice:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Fattura {invoice_id} non trovata"
+        )
+    return updated_invoice
+
+@router.delete("/{invoice_id}")
+async def delete_invoice(
+    invoice_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Elimina una fattura.
+    Solleva 404 se la fattura non esiste.
+    """
+    success = service.delete(db, invoice_id)
+    if not success:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Fattura {invoice_id} non trovata"
+        )
+    return {"message": "Fattura eliminata con successo"}
+

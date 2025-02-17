@@ -34,3 +34,21 @@ async def check_user_availability(
 ):
     availability = service.check_availability(db, user_id, start_date, end_date)
     return {"available_percentage": availability}
+
+@router.get("/project/{project_id}", response_model=List[ResourceAllocationResponse])
+async def get_project_allocations(
+    project_id: int,
+    start_date: date = None,
+    end_date: date = None,
+    db: Session = Depends(get_db)
+):
+    """
+    Recupera tutte le allocazioni per un progetto specifico.
+    Opzionalmente filtra per intervallo di date.
+    
+    Args:
+        project_id: ID del progetto
+        start_date: Data iniziale opzionale
+        end_date: Data finale opzionale
+    """
+    return service.get_project_allocations(db, project_id, start_date, end_date)

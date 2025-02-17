@@ -30,3 +30,71 @@ async def get_active_consultants(
     db: Session = Depends(get_db)
 ):
     return service.get_active_consultants(db)
+
+@router.get("/{user_id}", response_model=UserResponse)
+async def get_user(
+    user_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Recupera un utente specifico tramite il suo ID.
+    
+    Args:
+        user_id: ID dell'utente da recuperare
+        
+    Raises:
+        HTTPException: 404 se l'utente non esiste
+    """
+    user = service.get(db, user_id)
+    if not user:
+        raise HTTPException(
+            status_code=404, 
+            detail="Utente non trovato"
+        )
+    return user
+
+@router.put("/{user_id}", response_model=UserResponse)
+async def update_user(
+    user_id: int,
+    user: UserUpdate,
+    db: Session = Depends(get_db)
+):
+    """
+    Aggiorna un utente esistente.
+    
+    Args:
+        user_id: ID dell'utente da aggiornare
+        user: Dati di aggiornamento
+        
+    Raises:
+        HTTPException: 404 se l'utente non esiste
+    """
+    updated_user = service.update(db, user_id, user)
+    if not updated_user:
+        raise HTTPException(
+            status_code=404,
+            detail="Utente non trovato"
+        )
+    return updated_user
+
+@router.delete("/{user_id}")
+async def delete_user(
+    user_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Elimina un utente.
+    
+    Args:
+        user_id: ID dell'utente da eliminare
+        
+    Raises:
+        HTTPException: 404 se l'utente non esiste
+    """
+    success = service.delete(db, user_id)
+    if not success:
+        raise HTTPException(
+            status_code=404,
+            detail="Utente non trovato"
+        )
+    return {"message": "Utente eliminato con successo"}

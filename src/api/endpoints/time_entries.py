@@ -57,3 +57,30 @@ async def delete_time_entry(
             detail="Time entry non trovata"
         )
     return {"message": "Time entry eliminata con successo"}
+
+@router.put("/{time_entry_id}", response_model=TimeEntryResponse)
+async def update_time_entry(
+    time_entry_id: int,
+    time_entry: TimeEntryUpdate,
+    db: Session = Depends(get_db)
+):
+    """
+    Aggiorna una time entry esistente.
+    
+    Args:
+        time_entry_id: ID della time entry da aggiornare
+        time_entry: Dati di aggiornamento
+        
+    Returns:
+        TimeEntryResponse: Time entry aggiornata
+        
+    Raises:
+        HTTPException: 404 se la time entry non esiste
+    """
+    updated_entry = service.update(db, time_entry_id, time_entry)
+    if not updated_entry:
+        raise HTTPException(
+            status_code=404,
+            detail="Time entry non trovata"
+        )
+    return updated_entry
