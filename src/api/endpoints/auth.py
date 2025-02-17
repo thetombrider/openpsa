@@ -10,7 +10,8 @@ from src.auth.security import (
     verify_refresh_token,
     get_password_hash
 )
-from src.models.models import User, UserCreate
+from src.schemas.user import UserBase, UserCreate
+from src.models.models import User
 from datetime import timedelta
 
 router = APIRouter()

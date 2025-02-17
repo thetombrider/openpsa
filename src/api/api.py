@@ -1,6 +1,9 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.middleware import AuthenticationMiddleware
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from fastapi.openapi.docs import get_swagger_ui_html
+from fastapi.openapi.utils import get_openapi
+from src.middleware.auth import AuthMiddleware
 from src.api.endpoints.projects import router as projects_router
 from src.api.endpoints.users import router as users_router
 from src.api.endpoints.time_entries import router as time_entries_router
@@ -9,12 +12,18 @@ from src.api.endpoints.resource_allocations import router as allocations_router
 from src.api.endpoints.line_items import router as line_items_router
 from src.api.endpoints.clients import router as clients_router
 from src.api.endpoints.auth import router as auth_router
-from src.auth.security import get_current_user
 
 app = FastAPI(
     title="OpenPSA API",
     description="API per la gestione di progetti e risorse",
-    version="1.0.0"
+    version="1.0.0",
+    # Aggiungi la configurazione di sicurezza
+    openapi_tags=[
+        {"name": "Authentication", "description": "Operazioni di autenticazione"},
+        {"name": "Users", "description": "Gestione utenti"},
+        # ... altri tag
+    ],
+    swagger_ui_parameters={"persistAuthorization": True}
 )
 
 # Configurazione CORS
@@ -26,8 +35,46 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Middleware per gestire l'autenticazione
-app.add_middleware(AuthenticationMiddleware, backend=get_current_user)
+# Middleware per l'autenticazione
+app.add_middleware(AuthMiddleware)
+
+# Configura lo schema OAuth2 per Swagger
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="api/v1/auth/token")
+
+# Configura la documentazione OpenAPI
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+
+    openapi_schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description=app.description,
+        routes=app.routes,
+    )
+
+    # Aggiungi lo schema di sicurezza con maggiori dettagli
+    openapi_schema["components"] = {
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "oauth2",
+                "flows": {
+                    "password": {
+                        "tokenUrl": "api/v1/auth/token",
+                        "scopes": {}
+                    }
+                }
+            }
+        }
+    }
+    
+    # Applica lo schema di sicurezza globalmente
+    openapi_schema["security"] = [{"bearerAuth": []}]
+
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+app.openapi = custom_openapi
 
 # Inclusione dei router
 app.include_router(projects_router, prefix="/api/v1/projects", tags=["Projects"])
@@ -41,4 +88,5 @@ app.include_router(auth_router, prefix="/api/v1/auth", tags=["Authentication"])
 
 @app.get("/")
 async def root():
-    return {"message": "OpenPSA API v1.0"}
+    return {"message": "Open PSA API v1.0"}
+

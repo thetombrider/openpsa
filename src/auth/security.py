@@ -13,6 +13,16 @@ ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 30
 REFRESH_TOKEN_EXPIRE_DAYS = 7
 
+PUBLIC_ROUTES = [
+    "/",
+    "/api/v1/auth/token",      # Login
+    "/api/v1/auth/register",   # Registrazione
+    "/api/v1/auth/refresh",    # Refresh token
+    "/docs",                   # Swagger UI
+    "/redoc",                  # ReDoc
+    "/openapi.json"           # OpenAPI schema
+]
+
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -102,3 +112,32 @@ async def get_current_active_user(
             detail="Utente disattivato"
         )
     return current_user
+
+async def verify_token(token: str) -> User:
+    """
+    Verifica il token JWT e restituisce l'utente
+    """
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        email = payload.get("sub")
+        if email is None:
+            raise HTTPException(
+                status_code=401,
+                detail="Token non valido"
+            )
+            
+        db = next(get_db())
+        user = db.query(User).filter(User.email == email).first()
+        if user is None:
+            raise HTTPException(
+                status_code=401,
+                detail="Utente non trovato"
+            )
+            
+        return user
+        
+    except JWTError:
+        raise HTTPException(
+            status_code=401,
+            detail="Token non valido o scaduto"
+        )
