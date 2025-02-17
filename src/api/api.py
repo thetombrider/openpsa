@@ -6,6 +6,7 @@ from src.api.endpoints.time_entries import router as time_entries_router
 from src.api.endpoints.invoices import router as invoices_router
 from src.api.endpoints.resource_allocations import router as allocations_router
 from src.api.endpoints.line_items import router as line_items_router
+from src.api.endpoints.clients import router as clients_router
 
 app = FastAPI(
     title="OpenPSA API",
@@ -29,6 +30,8 @@ app.include_router(time_entries_router, prefix="/api/v1/time-entries", tags=["Ti
 app.include_router(invoices_router, prefix="/api/v1/invoices", tags=["Invoices"])
 app.include_router(allocations_router, prefix="/api/v1/allocations", tags=["Resource Allocations"])
 app.include_router(line_items_router, prefix="/api/v1/line-items", tags=["Invoice Line Items"])
+app.include_router(clients_router, prefix="/api/v1/clients", tags=["Clients"])
+
 @app.get("/")
 async def root():
     return {"message": "OpenPSA API v1.0"}

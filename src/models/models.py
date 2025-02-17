@@ -9,24 +9,24 @@ class Base (DeclarativeBase):
     pass
 
 class UserRole(enum.Enum):
-    ADMIN = "admin"
-    MANAGER = "manager"
-    CONSULTANT = "consultant"
+    ADMIN = "ADMIN"
+    MANAGER = "MANAGER"
+    CONSULTANT = "CONSULTANT"
 
 class ProjectStatus(enum.Enum):
-    DRAFT = "draft"
-    ACTIVE = "active"
-    COMPLETED = "completed"
-    CANCELLED = "cancelled"
+    DRAFT = "DRAFT"
+    ACTIVE = "ACTIVE"
+    COMPLETED = "COMPLETED"
+    CANCELLED = "CANCELLED"
 
 class ResourceAllocationStatus(enum.Enum):
-    PLANNED = "planned"
-    ACTIVE = "active"
-    COMPLETED = "completed"
+    PLANNED = "PLANNED"
+    ACTIVE = "ACTIVE"
+    COMPLETED = "COMPLETED"
 
 class BillingType(enum.Enum):
-        TIME_AND_MATERIALS = "time_and_materials"
-        FIXED_PRICE = "fixed_price"
+    TIME_AND_MATERIALS = "TIME_AND_MATERIALS"
+    FIXED_PRICE = "FIXED_PRICE"
 
 class User(Base):
     __tablename__ = "users"
