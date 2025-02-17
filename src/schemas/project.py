@@ -1,7 +1,6 @@
 from pydantic import BaseModel, Field
 from datetime import datetime
 from typing import Optional, List
-from decimal import Decimal
 from src.models.models import ProjectStatus, BillingType
 
 class ProjectBase(BaseModel):
@@ -11,7 +10,7 @@ class ProjectBase(BaseModel):
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     budget: Optional[float] = None
-    status: ProjectStatus = ProjectStatus.ACTIVE
+    status: ProjectStatus = ProjectStatus.DRAFT
     billing_type: BillingType = BillingType.FIXED_PRICE
     billing_currency: str = "EUR"
     billing_notes: Optional[str] = None
@@ -26,8 +25,8 @@ class ProjectUpdate(BaseModel):
     start_date: Optional[datetime] = None
     end_date: Optional[datetime] = None
     budget: Optional[float] = None
-    status: Optional[str] = None
-    billing_type: Optional[str] = None
+    status: Optional[ProjectStatus] = None
+    billing_type: Optional[BillingType] = None
     billing_currency: Optional[str] = None
     billing_notes: Optional[str] = None
 

@@ -31,3 +31,20 @@ async def get_project_time_entries(
     db: Session = Depends(get_db)
 ):
     return service.get_by_project(db, project_id)
+
+@router.delete("/{time_entry_id}")
+async def delete_time_entry(
+    time_entry_id: int,
+    db: Session = Depends(get_db)
+):
+    """
+    Elimina una time entry dato il suo ID.
+    Restituisce un messaggio di successo o un errore 404 se non trovata.
+    """
+    success = service.delete(db, time_entry_id)
+    if not success:
+        raise HTTPException(
+            status_code=404, 
+            detail="Time entry non trovata"
+        )
+    return {"message": "Time entry eliminata con successo"}

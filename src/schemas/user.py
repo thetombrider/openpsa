@@ -1,11 +1,6 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List
-from enum import Enum
-
-class UserRole(str, Enum):
-    ADMIN = "admin"
-    MANAGER = "manager"
-    CONSULTANT = "consultant"
+from src.models.models import UserRole
 
 class UserBase(BaseModel):
     email: EmailStr

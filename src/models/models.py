@@ -28,6 +28,13 @@ class BillingType(enum.Enum):
     TIME_AND_MATERIALS = "TIME_AND_MATERIALS"
     FIXED_PRICE = "FIXED_PRICE"
 
+class ConsultantRole(enum.Enum):
+    JUNIOR = "JUNIOR"
+    MID = "MID"
+    SENIOR = "SENIOR"
+    MASTER = "MASTER"
+    PRINCIPAL = "PRINCIPAL"
+
 class User(Base):
     __tablename__ = "users"
     
@@ -47,7 +54,7 @@ class User(Base):
     )
     allocations = relationship("ResourceAllocation", back_populates="user")
     billing_rates = relationship("BillingRate", back_populates="user")
-    project_links = relationship("ProjectUser", back_populates="user")
+    project_users = relationship("ProjectUser", back_populates="user")
 
 class Client(Base):
     __tablename__ = "clients"
@@ -65,11 +72,11 @@ class ProjectUser(Base):
     
     project_id = Column(Integer, ForeignKey("projects.id"), primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
-    role = Column(String)
+    role = Column(Enum(ConsultantRole), nullable=True)
     
-    # Aggiungi le relazioni
-    project = relationship("Project", back_populates="user_links")
-    user = relationship("User", back_populates="project_links")
+    # Modifica qui: project_links -> project_users
+    project = relationship("Project", back_populates="project_users")
+    user = relationship("User", back_populates="project_users")
 
 class Project(Base):
     __tablename__ = "projects"
@@ -97,7 +104,7 @@ class Project(Base):
     allocations = relationship("ResourceAllocation", back_populates="project")
     billing_rates = relationship("BillingRate", back_populates="project")
     invoices = relationship("Invoice", back_populates="project", cascade="all, delete-orphan")
-    user_links = relationship("ProjectUser", back_populates="project")
+    project_users = relationship("ProjectUser", back_populates="project")
 
     @validates('end_date')
     def validate_end_date(self, key, value):
@@ -141,8 +148,8 @@ class ResourceAllocation(Base):
     project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=False)
-    allocation_percentage = Column(Float, nullable=False)  # es. 50% = 0.5
-    role = Column(String)  # ruolo nel progetto
+    allocation_percentage = Column(Float, nullable=False)
+    role = Column(Enum(ConsultantRole), nullable=True)  # Modifica qui
     status = Column(Enum(ResourceAllocationStatus), nullable=False)
     
     user = relationship("User", back_populates="allocations")
