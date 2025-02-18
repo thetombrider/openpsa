@@ -12,6 +12,7 @@ from src.api.endpoints.resource_allocations import router as allocations_router
 from src.api.endpoints.line_items import router as line_items_router
 from src.api.endpoints.clients import router as clients_router
 from src.api.endpoints.auth import router as auth_router
+from src.api.endpoints.utils import router as utils_router
 
 # Importa tutti gli schemi necessari
 from src.schemas.auth import Token, LoginRequest
@@ -83,6 +84,7 @@ app.include_router(allocations_router, prefix="/api/v1/allocations", tags=["Reso
 app.include_router(line_items_router, prefix="/api/v1/line-items", tags=["Invoice Line Items"])
 app.include_router(clients_router, prefix="/api/v1/clients", tags=["Clients"])
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["Authentication"])
+app.include_router(utils_router, prefix="/api/v1/utils", tags=["Utilities"])
 
 @app.get("/")
 async def root():
