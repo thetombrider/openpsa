@@ -4,7 +4,7 @@ from src.models.models import UserRole
 # Token settings
 JWT_SECRET_KEY = "your-secret-key"  # Sposta in .env
 JWT_ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 120
 REFRESH_TOKEN_EXPIRE_DAYS = 7
 
 # Public routes che non richiedono autenticazione
