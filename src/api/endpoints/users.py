@@ -1,8 +1,8 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from typing import List
 from src.database.database import get_db
-from src.schemas.user import UserCreate, UserResponse, UserUpdate
+from src.schemas.user import UserCreate, UserResponse, UserUpdate, UserUpdateResponse
 from src.services.user import UserService
 from src.models.models import UserRole
 
@@ -35,6 +35,7 @@ async def get_active_consultants(
 @router.get("/{user_id}", response_model=UserResponse)
 async def get_user(
     user_id: int,
+    request: Request,
     db: Session = Depends(get_db)
 ):
     """
@@ -46,29 +47,28 @@ async def get_user(
     Raises:
         HTTPException: 404 se l'utente non esiste
     """
+    print(f"GET /users/{user_id} - Auth User: {request.state.user.email}")
+    
     user = service.get(db, user_id)
     if not user:
         raise HTTPException(
-            status_code=404, 
-            detail="Utente non trovato"
+            status_code=404,  # Non 401
+            detail=f"Utente {user_id} non trovato"
         )
+        
+    print(f"Found user: {user.email}")
     return user
 
-@router.put("/{user_id}", response_model=UserResponse)
+@router.put("/{user_id}", response_model=UserUpdateResponse)
 async def update_user(
     user_id: int,
     user: UserUpdate,
+    request: Request,
     db: Session = Depends(get_db)
 ):
     """
     Aggiorna un utente esistente.
-    
-    Args:
-        user_id: ID dell'utente da aggiornare
-        user: Dati di aggiornamento
-        
-    Raises:
-        HTTPException: 404 se l'utente non esiste
+    Se l'email viene modificata, vengono generati nuovi token di accesso.
     """
     updated_user = service.update(db, user_id, user)
     if not updated_user:
@@ -76,7 +76,30 @@ async def update_user(
             status_code=404,
             detail="Utente non trovato"
         )
-    return updated_user
+    
+    # Prepara la risposta base
+    response_data = {
+        "id": updated_user.id,
+        "email": updated_user.email,
+        "name": updated_user.name,
+        "role": updated_user.role,
+        "hourly_rate": updated_user.hourly_rate,
+        "created_at": updated_user.created_at
+    }
+    
+    # Se l'email è cambiata, aggiungi i nuovi token
+    if hasattr(user, 'email') and user.email:
+        from src.auth.security import create_token_pair
+        access_token, refresh_token = create_token_pair({
+            "sub": updated_user.email,
+            "role": updated_user.role.value
+        })
+        response_data.update({
+            "access_token": access_token,
+            "refresh_token": refresh_token
+        })
+    
+    return UserUpdateResponse(**response_data)
 
 @router.delete("/{user_id}")
 async def delete_user(

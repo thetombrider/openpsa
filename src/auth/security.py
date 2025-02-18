@@ -92,21 +92,20 @@ async def verify_token(token: str) -> User:
                 status_code=401,
                 detail="Token non valido"
             )
-            
+        
         db = next(get_db())
         user = db.query(User).filter(User.email == email).first()
-        if user is None:
+        if not user:
             raise HTTPException(
-                status_code=401,
-                detail="Utente non trovato"
+                status_code=404,  # Cambiato da 401 a 404
+                detail=f"Utente non trovato: {email}"
             )
-            
         return user
         
-    except JWTError as je:
+    except JWTError:
         raise HTTPException(
             status_code=401,
-            detail=f"Token non valido: {str(je)}"
+            detail="Token non valido o scaduto"
         )
     except Exception as e:
         raise HTTPException(

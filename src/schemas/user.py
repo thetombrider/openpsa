@@ -1,6 +1,8 @@
 from pydantic import BaseModel, EmailStr
 from typing import Optional, List
 from src.models.models import UserRole
+from datetime import datetime
+from pydantic import Field
 
 class UserBase(BaseModel):
     email: EmailStr
@@ -17,8 +19,26 @@ class UserUpdate(BaseModel):
     role: Optional[UserRole] = None
     hourly_rate: Optional[float] = None
 
-class UserResponse(UserBase):
+class UserResponse(BaseModel):
     id: int
+    email: EmailStr
+    name: str
+    role: UserRole
+    hourly_rate: Optional[float] = None
+    created_at: Optional[datetime] = None
     
     class Config:
-        orm_mode = True
+        from_attributes = True
+
+class UserUpdateResponse(BaseModel):
+    id: int
+    email: EmailStr
+    name: str
+    role: UserRole
+    hourly_rate: Optional[float] = None
+    created_at: Optional[datetime] = None
+    access_token: Optional[str] = None
+    refresh_token: Optional[str] = None
+
+    class Config:
+        from_attributes = True

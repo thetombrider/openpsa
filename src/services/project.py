@@ -3,6 +3,8 @@ from sqlalchemy.orm import Session, joinedload
 from src.models.models import Project
 from src.schemas.project import ProjectCreate, ProjectUpdate
 from src.services.base import BaseService
+from src.models.models import Client
+from fastapi import HTTPException
 
 class ProjectService(BaseService[Project, ProjectCreate, ProjectUpdate]):
     def __init__(self):
@@ -19,3 +21,14 @@ class ProjectService(BaseService[Project, ProjectCreate, ProjectUpdate]):
             .filter(self.model.id == project_id)\
             .options(joinedload(self.model.allocations))\
             .first()
+    
+    def update(self, db: Session, id: int, obj_in: ProjectUpdate) -> Optional[Project]:
+        # Verifica esistenza client
+        if obj_in.client_id:
+            client = db.query(Client).filter(Client.id == obj_in.client_id).first()
+            if not client:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Client with id {obj_in.client_id} not found"
+                )
+        return super().update(db, id, obj_in)
