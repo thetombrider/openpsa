@@ -207,33 +207,11 @@ class InvoiceLineItem(Base):
     __tablename__ = "invoice_line_items"
     
     id = Column(Integer, primary_key=True)
-    invoice_id = Column(Integer, ForeignKey("invoices.id"), nullable=False)
-    description = Column(String, nullable=False)
-    quantity = Column(Float, nullable=False)  # Ore o quantità
-    rate = Column(Numeric(10, 2), nullable=False)  # Tariffa oraria
-    _amount = Column('amount', Numeric(10, 2))
-
-    @property
-    def amount(self):
-        return self.quantity * self.rate
-
-    @amount.setter
-    def amount(self, value):
-        pass  # amount is derived from quantity and rate, so we do nothing here
-
-    @validates('quantity', 'rate')
-    def validate_fields(self, key, value):
-        """
-        Validates and updates the 'quantity' and 'rate' fields.
-
-        Ensures that the provided values for 'quantity' and 'rate' are valid.
-        This method is called automatically when these fields are set.
-
-        :param key: The name of the field being validated.
-        :param value: The value to be validated.
-        :return: The validated value.
-        """
-        return value
+    invoice_id = Column(Integer, ForeignKey("invoices.id"))
+    description = Column(String)
+    quantity = Column(Numeric(10, 2))
+    rate = Column(Numeric(10, 2))
+    amount = Column(Numeric(10, 2))
     
     time_entry_links = relationship(
         "LineItemTimeEntry",

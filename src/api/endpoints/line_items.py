@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from typing import List
 from src.database.database import get_db
-from src.schemas.invoice import InvoiceLineItemBase
+from src.schemas.invoice import InvoiceLineItemBase, InvoiceLineItemResponse
 from src.services.line_item import LineItemService
 
 router = APIRouter()
@@ -16,14 +16,14 @@ async def add_line_items(
 ):
     return service.batch_create(db, invoice_id, line_items)
 
-@router.get("/invoice/{invoice_id}/items", response_model=List[InvoiceLineItemBase])
+@router.get("/invoice/{invoice_id}/items", response_model=List[InvoiceLineItemResponse])
 async def get_invoice_items(
     invoice_id: int,
     db: Session = Depends(get_db)
 ):
     return service.get_by_invoice(db, invoice_id)
 
-@router.put("/items/{item_id}", response_model=InvoiceLineItemBase)
+@router.put("/items/{item_id}", response_model=InvoiceLineItemResponse)
 async def update_line_item(
     item_id: int,
     item: InvoiceLineItemBase,

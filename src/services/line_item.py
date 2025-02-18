@@ -1,3 +1,4 @@
+from decimal import Decimal
 from typing import List
 from sqlalchemy.orm import Session
 from src.models.models import InvoiceLineItem
@@ -32,3 +33,39 @@ class LineItemService(BaseService[InvoiceLineItem, InvoiceLineItemBase, InvoiceL
         for item in db_items:
             db.refresh(item)
         return db_items
+
+    def create(self, db: Session, obj_in: InvoiceLineItemBase) -> InvoiceLineItem:
+        """Crea un line item calcolando automaticamente l'amount"""
+        obj_data = obj_in.model_dump()
+        
+        # Calcola l'amount dal rate e quantity
+        amount = Decimal(str(obj_data["quantity"])) * Decimal(str(obj_data["rate"]))
+        obj_data["amount"] = amount
+        
+        db_obj = self.model(**obj_data)
+        db.add(db_obj)
+        db.commit()
+        db.refresh(db_obj)
+        return db_obj
+    
+    def update(self, db: Session, id: int, obj_in: InvoiceLineItemBase) -> InvoiceLineItem:
+        """Aggiorna un line item ricalcolando l'amount"""
+        db_obj = self.get(db, id)
+        if not db_obj:
+            return None
+            
+        update_data = obj_in.model_dump(exclude_unset=True)
+        
+        # Se quantity o rate cambiano, ricalcola amount
+        if "quantity" in update_data or "rate" in update_data:
+            quantity = update_data.get("quantity", db_obj.quantity)
+            rate = update_data.get("rate", db_obj.rate)
+            update_data["amount"] = Decimal(str(quantity)) * Decimal(str(rate))
+            
+        for field, value in update_data.items():
+            setattr(db_obj, field, value)
+            
+        db.add(db_obj)
+        db.commit()
+        db.refresh(db_obj)
+        return db_obj

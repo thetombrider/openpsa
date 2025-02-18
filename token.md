@@ -1,7 +1,7 @@
 tommasominuto@gmail.com
 
 {
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0b21tYXNvbWludXRvQGdtYWlsLmNvbSIsInJvbGUiOiJBRE1JTiIsImV4cCI6MTczOTg5MDY1MX0.WNQafuAnfAh3eLkSx8vekoEG9FSSzhlJWJIJOep7VYA",
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0b21tYXNvbWludXRvQGdtYWlsLmNvbSIsInJvbGUiOiJBRE1JTiIsImV4cCI6MTczOTg5NDk0Nn0.yRbrnRBhDysGzXXvVfH78auUDaXWls435NW5FcEqyec",
   "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0b21tYXNvbWludXRvQGdtYWlsLmNvbSIsInJvbGUiOiJBRE1JTiIsImV4cCI6MTc0MDQ5MzY1MSwidG9rZW5fdHlwZSI6InJlZnJlc2gifQ.pwzwMSAHkOUqtal6hYyvguf9tW2aNOuLYU8BOF12tUw",
   "token_type": "bearer"
 }

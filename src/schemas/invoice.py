@@ -1,12 +1,12 @@
-from pydantic import BaseModel, Field, field_validator, ValidationInfo
+from pydantic import BaseModel, Field, model_validator, field_validator, ValidationInfo
 from typing import Annotated, Optional, List
 from datetime import date
 from decimal import Decimal
 
 class InvoiceLineItemBase(BaseModel):
     description: str
-    quantity: float
-    rate: Annotated[Decimal, Field(max_digits=10, decimal_places=2)]
+    quantity: Decimal = Field(gt=0, description="Deve essere maggiore di zero")
+    rate: Decimal = Field(gt=0, description="Deve essere maggiore di zero")
 
 class InvoiceLineItemCreate(InvoiceLineItemBase):
     @field_validator('quantity')
@@ -21,20 +21,44 @@ class InvoiceLineItemCreate(InvoiceLineItemBase):
                 f"Non puoi fatturare più ore di quelle registrate. "
                 f"Ore registrate: {total_hours}"
             )
-        
         return v
 
-class InvoiceBase(BaseModel):
+class InvoiceCreate(BaseModel):
     project_id: int
-    invoice_number: str
+    invoice_number: str = Field(min_length=1, max_length=50)
     invoice_date: date
-    due_date: date = None
-    amount: Annotated[Decimal, Field(max_digits=10, decimal_places=2)]
+    due_date: date
     notes: Optional[str] = None
-    line_items: List[InvoiceLineItemBase] = None
+    line_items: List[InvoiceLineItemBase]
 
-class InvoiceCreate(InvoiceBase):
-    pass
+    @model_validator(mode='after')
+    def validate_dates_and_invoice(self) -> 'InvoiceCreate':
+        if self.due_date < self.invoice_date:
+            raise ValueError("La data di scadenza deve essere successiva alla data fattura")
+        
+        if self.invoice_number.lower() == 'string':
+            raise ValueError("Il numero fattura non può essere 'string'")
+            
+        return self
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "project_id": 1,
+                "invoice_number": "2024/001",
+                "invoice_date": "2024-02-18",
+                "due_date": "2024-03-18",
+                "notes": "Prima fattura",  # Rimosso amount
+                "line_items": [
+                    {
+                        "description": "Consulenza",
+                        "quantity": "8",
+                        "rate": "125.00"
+                    }
+                ]
+            }
+        }
+    }
 
 class InvoiceUpdate(BaseModel):
     invoice_date: Optional[date] = None
@@ -58,5 +82,25 @@ class InvoiceResponseNoItems(BaseModel):
     class Config:
         orm_mode = True
 
-class InvoiceResponse(InvoiceResponseNoItems):
-    line_items: List[InvoiceLineItemBase] = []
+class InvoiceLineItemResponse(InvoiceLineItemBase):
+    id: int
+    invoice_id: int
+    amount: Decimal  # Solo nella risposta, calcolato dal service
+
+    class Config:
+        from_attributes = True
+
+class InvoiceBase(BaseModel):
+    project_id: int
+    invoice_number: str
+    invoice_date: date
+    due_date: date = None
+    amount: Annotated[Decimal, Field(max_digits=10, decimal_places=2)]
+    notes: Optional[str] = None
+    line_items: List[InvoiceLineItemBase] = None
+
+class InvoiceResponse(InvoiceBase):
+    id: int
+    
+    class Config:
+        from_attributes = True
