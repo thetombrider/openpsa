@@ -7,21 +7,17 @@ from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 from src.models.models import User, UserRole
 from src.database.database import get_db
+import logging
+from src.auth.config import (
+    JWT_SECRET_KEY,
+    JWT_ALGORITHM,
+    ACCESS_TOKEN_EXPIRE_MINUTES,
+    REFRESH_TOKEN_EXPIRE_DAYS,
+    PUBLIC_ROUTES
+)
 
-SECRET_KEY = "your-secret-key"  # Sposta in .env
-ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
-REFRESH_TOKEN_EXPIRE_DAYS = 7
-
-PUBLIC_ROUTES = [
-    "/",
-    "/api/v1/auth/token",      # Login
-    "/api/v1/auth/register",   # Registrazione
-    "/api/v1/auth/refresh",    # Refresh token
-    "/docs",                   # Swagger UI
-    "/redoc",                  # ReDoc
-    "/openapi.json"           # OpenAPI schema
-]
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
@@ -32,54 +28,25 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
 def get_password_hash(password: str) -> str:
     return pwd_context.hash(password)
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -> str:
+def create_access_token(data: dict) -> str:
     to_encode = data.copy()
-    expire = datetime.utcnow() + (expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES))
+    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     to_encode.update({"exp": expire})
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
 
 def create_refresh_token(data: dict) -> str:
-    """
-    Crea un refresh token con scadenza di 7 giorni
-    """
     to_encode = data.copy()
     expire = datetime.utcnow() + timedelta(days=REFRESH_TOKEN_EXPIRE_DAYS)
     to_encode.update({
         "exp": expire,
         "token_type": "refresh"
     })
-    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+    return jwt.encode(to_encode, JWT_SECRET_KEY, algorithm=JWT_ALGORITHM)
 
 def create_token_pair(user_data: dict) -> Tuple[str, str]:
-    """
-    Crea una coppia di token (access token e refresh token)
-    """
     access_token = create_access_token(user_data)
-    
-    # Crea refresh token con scadenza più lunga
-    refresh_data = user_data.copy()
-    refresh_data.update({"token_type": "refresh"})
-    refresh_token = create_refresh_token(refresh_data)
-    
+    refresh_token = create_refresh_token(user_data)
     return access_token, refresh_token
-
-def verify_refresh_token(token: str) -> dict:
-    """
-    Verifica la validità di un refresh token
-    """
-    try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        if payload.get("token_type") != "refresh":
-            raise HTTPException(
-                status_code=400,
-                detail="Token non valido: tipo errato"
-            )
-        return payload
-    except JWTError:
-        raise HTTPException(
-            status_code=401,
-            detail="Token non valido o scaduto"
-        )
 
 async def get_current_user(
     token: str = Depends(oauth2_scheme),
@@ -91,7 +58,7 @@ async def get_current_user(
         headers={"WWW-Authenticate": "Bearer"},
     )
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
         email: str = payload.get("sub")
         if email is None:
             raise credentials_exception
@@ -118,7 +85,7 @@ async def verify_token(token: str) -> User:
     Verifica il token JWT e restituisce l'utente
     """
     try:
-        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
         email = payload.get("sub")
         if email is None:
             raise HTTPException(
@@ -135,6 +102,40 @@ async def verify_token(token: str) -> User:
             )
             
         return user
+        
+    except JWTError as je:
+        raise HTTPException(
+            status_code=401,
+            detail=f"Token non valido: {str(je)}"
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=401,
+            detail=f"Errore di autenticazione: {str(e)}"
+        )
+
+def verify_refresh_token(token: str) -> dict:
+    """
+    Verifica che il token sia un refresh token valido
+    """
+    try:
+        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
+        
+        # Verifica che sia un refresh token
+        if payload.get("token_type") != "refresh":
+            raise HTTPException(
+                status_code=401,
+                detail="Token non valido: non è un refresh token"
+            )
+            
+        # Verifica presenza email
+        if not payload.get("sub"):
+            raise HTTPException(
+                status_code=401,
+                detail="Token non valido: manca l'identificativo utente"
+            )
+            
+        return payload
         
     except JWTError:
         raise HTTPException(

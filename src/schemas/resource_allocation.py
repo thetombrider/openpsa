@@ -1,6 +1,6 @@
-from pydantic import BaseModel, Field, field_validator, ValidationInfo
+from pydantic import BaseModel, Field, field_validator, ValidationInfo, model_validator
 from datetime import date
-from typing import Optional
+from typing import Optional, Any
 from src.models.models import ConsultantRole, ResourceAllocationStatus
 
 class ResourceAllocationBase(BaseModel):
@@ -13,35 +13,37 @@ class ResourceAllocationBase(BaseModel):
     role: Optional[ConsultantRole] = None
 
 class ResourceAllocationCreate(ResourceAllocationBase):
-    @field_validator('start_date')
-    @classmethod
-    def validate_allocation_period(cls, v: date, info: ValidationInfo) -> date:
-        if not hasattr(info.data, 'user_id'):
-            raise ValueError("user_id è richiesto")
-
-        from src.services.resource_allocation import ResourceAllocationService
-        from src.database.database import SessionLocal
-        
-        db = SessionLocal()
+    @model_validator(mode='after')
+    def validate_allocation(self) -> 'ResourceAllocationCreate':
+        """Validazione completa del modello dopo che tutti i campi sono popolati"""
         try:
-            service = ResourceAllocationService()
-            total_allocation = service.check_availability(
-                db,
-                info.data.user_id,
-                v,
-                info.data.end_date if hasattr(info.data, 'end_date') else v
-            )
-
-            new_allocation = info.data.allocation_percentage
-            if total_allocation + new_allocation > 1:
-                raise ValueError(
-                    f"L'allocazione totale non può superare il 100%. "
-                    f"Allocazione disponibile: {(1-total_allocation)*100}%"
+            # Verifica date
+            if self.end_date < self.start_date:
+                raise ValueError("La data di fine deve essere successiva alla data di inizio")
+            
+            # Verifica disponibilità
+            from src.services.resource_allocation import ResourceAllocationService
+            from src.database.database import SessionLocal
+            
+            with SessionLocal() as db:
+                service = ResourceAllocationService()
+                total_allocation = service.check_availability(
+                    db,
+                    self.user_id,
+                    self.start_date,
+                    self.end_date
                 )
-        finally:
-            db.close()
-        
-        return v
+
+                if total_allocation + self.allocation_percentage > 1:
+                    raise ValueError(
+                        f"L'allocazione totale non può superare il 100%. "
+                        f"Allocazione disponibile: {(1-total_allocation)*100}%"
+                    )
+
+            return self
+            
+        except Exception as e:
+            raise ValueError(str(e))
 
 class ResourceAllocationUpdate(BaseModel):
     start_date: Optional[date] = None

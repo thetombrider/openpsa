@@ -57,131 +57,16 @@ def custom_openapi():
         routes=app.routes,
     )
 
-    # Aggiungi lo schema di sicurezza con maggiori dettagli
-    openapi_schema["components"] = {
-        "securitySchemes": {
-            "bearerAuth": {
-                "type": "http",
-                "scheme": "bearer",
-                "bearerFormat": "JWT"
-            }
-        },
-        "schemas": {
-            "Token": {
-                "title": "Token",
-                "type": "object",
-                "properties": {
-                    "access_token": {"type": "string"},
-                    "token_type": {"type": "string"},
-                    "refresh_token": {"type": "string"}
-                },
-                "required": ["access_token", "token_type"]
-            },
-            "TokenData": {
-                "title": "TokenData",
-                "type": "object",
-                "properties": {
-                    "email": {"type": "string"},
-                    "role": {"type": "string"}
-                }
-            },
-            "LoginForm": {
-                "title": "LoginForm",
-                "type": "object",
-                "properties": {
-                    "username": {"type": "string", "format": "email"},
-                    "password": {"type": "string", "format": "password"}
-                },
-                "required": ["username", "password"]
-            }
+    # Aggiungi SOLO lo schema di sicurezza
+    openapi_schema["components"]["securitySchemes"] = {
+        "bearerAuth": {
+            "type": "http",
+            "scheme": "bearer",
+            "bearerFormat": "JWT"
         }
     }
-    
-    # Aggiungi gli schemi
-    openapi_schema["components"]["schemas"].update({
-        "InvoiceCreate": {
-            "title": "InvoiceCreate",
-            "type": "object",
-            "properties": {
-                "project_id": {"type": "integer"},
-                "invoice_number": {"type": "string"},
-                "invoice_date": {"type": "string", "format": "date"},
-                "due_date": {"type": "string", "format": "date"},
-                "amount": {"type": "number", "format": "decimal"},
-                "notes": {"type": "string"},
-                "line_items": {
-                    "type": "array",
-                    "items": {"$ref": "#/components/schemas/InvoiceLineItemBase"}
-                }
-            },
-            "required": ["project_id", "invoice_number", "invoice_date", "amount"]
-        },
-        "InvoiceResponse": {
-            "title": "InvoiceResponse",
-            "type": "object",
-            "properties": {
-                "id": {"type": "integer"},
-                "project_id": {"type": "integer"},
-                "invoice_number": {"type": "string"},
-                "invoice_date": {"type": "string", "format": "date"},
-                "due_date": {"type": "string", "format": "date"},
-                "amount": {"type": "number", "format": "decimal"},
-                "notes": {"type": "string"},
-                "paid": {"type": "boolean"},
-                "paid_date": {"type": "string", "format": "date"},
-                "line_items": {
-                    "type": "array",
-                    "items": {"$ref": "#/components/schemas/InvoiceLineItemBase"}
-                }
-            }
-        },
-        "InvoiceLineItemBase": {
-            "title": "InvoiceLineItemBase",
-            "type": "object",
-            "properties": {
-                "description": {"type": "string"},
-                "quantity": {"type": "number"},
-                "rate": {"type": "number", "format": "decimal"}
-            },
-            "required": ["description", "quantity", "rate"]
-        },
-        "HTTPValidationError": {
-            "title": "HTTPValidationError",
-            "type": "object",
-            "properties": {
-                "detail": {
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/components/schemas/ValidationError"
-                    }
-                }
-            }
-        },
-        "ValidationError": {
-            "title": "ValidationError",
-            "type": "object",
-            "properties": {
-                "loc": {
-                    "type": "array",
-                    "items": {"type": "string"}
-                },
-                "msg": {"type": "string"},
-                "type": {"type": "string"}
-            },
-            "required": ["loc", "msg", "type"]
-        },
-        "Body_login_api_v1_auth_token_post": {
-            "title": "Body_login_api_v1_auth_token_post",
-            "type": "object",
-            "properties": {
-                "username": {"type": "string", "format": "email"},
-                "password": {"type": "string", "format": "password"}
-            },
-            "required": ["username", "password"]
-        }
-    })
 
-    # Applica lo schema di sicurezza globalmente
+    # Applica la sicurezza globalmente
     openapi_schema["security"] = [{"bearerAuth": []}]
 
     app.openapi_schema = openapi_schema

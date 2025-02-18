@@ -23,6 +23,7 @@ class ResourceAllocationStatus(enum.Enum):
     PLANNED = "PLANNED"
     ACTIVE = "ACTIVE"
     COMPLETED = "COMPLETED"
+    CANCELLED = "CANCELLED"
 
 class BillingType(enum.Enum):
     TIME_AND_MATERIALS = "TIME_AND_MATERIALS"

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Request
 from sqlalchemy.orm import Session
 from typing import List
 from datetime import date
@@ -30,10 +30,16 @@ async def check_user_availability(
     user_id: int,
     start_date: date,
     end_date: date,
+    request: Request,
     db: Session = Depends(get_db)
-):
-    availability = service.check_availability(db, user_id, start_date, end_date)
-    return {"available_percentage": availability}
+) -> dict:
+    available = service.check_availability(db, user_id, start_date, end_date)
+    return {
+        "available_percentage": available,
+        "is_fully_available": available == 1,
+        "is_partially_available": 0 < available < 1,
+        "is_fully_allocated": available == 0
+    }
 
 @router.get("/project/{project_id}", response_model=List[ResourceAllocationResponse])
 async def get_project_allocations(

@@ -4,14 +4,12 @@ from typing import List
 from src.database.database import get_db
 from src.schemas.user import UserCreate, UserResponse, UserUpdate
 from src.services.user import UserService
-from src.auth.permissions import require_roles
 from src.models.models import UserRole
 
 router = APIRouter()
 service = UserService()
 
 @router.post("/", response_model=UserResponse)
-@require_roles([UserRole.ADMIN])
 async def create_user(
     user: UserCreate,
     db: Session = Depends(get_db)

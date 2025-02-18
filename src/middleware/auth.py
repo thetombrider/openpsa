@@ -2,10 +2,15 @@
 from fastapi import Request, HTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
-from src.auth.security import verify_token, PUBLIC_ROUTES
+from src.auth.security import verify_token
+from src.auth.config import PUBLIC_ROUTES
 
 class AuthMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
+        # Aggiungi logging per debug
+        print(f"Method: {request.method}, Path: {request.url.path}")
+        print(f"Headers: {request.headers}")
+
         path = request.url.path
         
         # Verifica se il path è pubblico
@@ -30,7 +35,10 @@ class AuthMiddleware(BaseHTTPMiddleware):
             # Estrai e verifica il token
             token = auth_header.split(' ')[1]
             try:
-                request.state.user = await verify_token(token)
+                user = await verify_token(token)
+                # Aggiungi logging dell'utente
+                print(f"User authenticated: {user.email}, Role: {user.role}")
+                request.state.user = user
             except HTTPException as e:
                 return JSONResponse(
                     status_code=e.status_code,
@@ -41,10 +49,11 @@ class AuthMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
             
         except Exception as e:
+            print(f"Authentication error: {str(e)}")  # Debug log
             return JSONResponse(
                 status_code=401,
                 content={
-                    "detail": "Errore di autenticazione"
+                    "detail": f"Token non valido: {str(e)}"
                 },
                 headers={"WWW-Authenticate": "Bearer"}
             )
