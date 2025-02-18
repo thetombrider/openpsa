@@ -1,8 +1,9 @@
 # src/middleware/auth.py
 from fastapi import Request, HTTPException
+from fastapi.security import HTTPAuthorizationCredentials
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
-from src.auth.security import verify_token
+from src.auth.security import get_current_user
 from src.auth.config import PUBLIC_ROUTES
 import logging
 
@@ -21,11 +22,17 @@ class AuthMiddleware(BaseHTTPMiddleware):
             )
 
         try:
-            token = auth_header.split(" ")[1]
-            user = await verify_token(token)
+            # Usa get_current_user
+            from src.database.database import get_db
+            db = next(get_db())
+            credentials = HTTPAuthorizationCredentials(
+                scheme="Bearer",
+                credentials=auth_header.split(" ")[1]
+            )
+            user = await get_current_user(credentials, db)
             request.state.user = user
-            response = await call_next(request)
-            return response
+            return await call_next(request)
+            
         except HTTPException as he:
             return JSONResponse(
                 status_code=he.status_code,

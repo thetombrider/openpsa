@@ -11,13 +11,13 @@ from src.auth.security import (
     get_password_hash
 )
 from src.schemas.user import UserBase, UserCreate
-from src.schemas.auth import Token
+from src.schemas.auth import Token, LoginRequest
 from src.models.models import User
 from datetime import timedelta
 
 router = APIRouter()
 
-@router.post("/token", response_model=Token, 
+@router.post("/token", response_model=Token,
     responses={
         200: {
             "model": Token,
@@ -29,34 +29,33 @@ router = APIRouter()
     }
 )
 async def login(
-    form_data: OAuth2PasswordRequestForm = Depends(),
+    login_data: LoginRequest,
     db: Session = Depends(get_db)
 ):
     """
     Ottieni un token di accesso.
     
-    - **username**: email dell'utente
+    - **email**: email dell'utente
     - **password**: password dell'utente
     """
-    username = form_data.username
-    password = form_data.password
-    user = db.query(User).filter(User.email == username).first()
-    if not user or not verify_password(password, user.password_hash):
+    user = db.query(User).filter(User.email == login_data.email).first()
+    if not user or not verify_password(login_data.password, user.password_hash):
         raise HTTPException(
             status_code=401,
             detail="Email o password non corretti"
         )
     
     # Crea coppia di token
-    access_token, refresh_token = create_token_pair(
-        {"sub": user.email, "role": user.role.value}
-    )
+    access_token, refresh_token = create_token_pair({
+        "sub": user.email,
+        "role": user.role.value
+    })
     
-    return {
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-        "token_type": "bearer"
-    }
+    return Token(
+        access_token=access_token,
+        refresh_token=refresh_token,
+        token_type="bearer"
+    )
 
 @router.post("/refresh")
 async def refresh_token(

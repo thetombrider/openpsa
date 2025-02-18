@@ -3,7 +3,7 @@ from typing import Optional, Tuple
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi import HTTPException, Security, Depends
-from fastapi.security import OAuth2PasswordBearer
+from fastapi.security import OAuth2PasswordBearer, HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.orm import Session
 from src.models.models import User, UserRole
 from src.database.database import get_db
@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+security = HTTPBearer()
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     return pwd_context.verify(plain_password, hashed_password)
@@ -49,26 +50,34 @@ def create_token_pair(user_data: dict) -> Tuple[str, str]:
     return access_token, refresh_token
 
 async def get_current_user(
-    token: str = Depends(oauth2_scheme),
+    credentials: HTTPAuthorizationCredentials = Depends(security),
     db: Session = Depends(get_db)
 ) -> User:
-    credentials_exception = HTTPException(
-        status_code=401,
-        detail="Credenziali non valide",
-        headers={"WWW-Authenticate": "Bearer"},
-    )
     try:
+        token = credentials.credentials
         payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
-        email: str = payload.get("sub")
-        if email is None:
-            raise credentials_exception
-    except JWTError:
-        raise credentials_exception
+        email = payload.get("sub")
+        if not email:
+            raise HTTPException(
+                status_code=401, 
+                detail="Token non valido"
+            )
+            
+        user = db.query(User).filter(User.email == email).first()
+        if not user:
+            raise HTTPException(
+                status_code=401,  # Manteniamo 401 per sicurezza
+                detail="Utente non trovato"
+            )
+            
+        return user
         
-    user = db.query(User).filter(User.email == email).first()
-    if user is None:
-        raise credentials_exception
-    return user
+    except JWTError:
+        raise HTTPException(
+            status_code=401, 
+            detail="Token non valido o scaduto",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
 
 async def get_current_active_user(
     current_user: User = Depends(get_current_user)
@@ -79,39 +88,6 @@ async def get_current_active_user(
             detail="Utente disattivato"
         )
     return current_user
-
-async def verify_token(token: str) -> User:
-    """
-    Verifica il token JWT e restituisce l'utente
-    """
-    try:
-        payload = jwt.decode(token, JWT_SECRET_KEY, algorithms=[JWT_ALGORITHM])
-        email = payload.get("sub")
-        if email is None:
-            raise HTTPException(
-                status_code=401,
-                detail="Token non valido"
-            )
-        
-        db = next(get_db())
-        user = db.query(User).filter(User.email == email).first()
-        if not user:
-            raise HTTPException(
-                status_code=404,  # Cambiato da 401 a 404
-                detail=f"Utente non trovato: {email}"
-            )
-        return user
-        
-    except JWTError:
-        raise HTTPException(
-            status_code=401,
-            detail="Token non valido o scaduto"
-        )
-    except Exception as e:
-        raise HTTPException(
-            status_code=401,
-            detail=f"Errore di autenticazione: {str(e)}"
-        )
 
 def verify_refresh_token(token: str) -> dict:
     """
