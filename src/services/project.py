@@ -32,3 +32,39 @@ class ProjectService(BaseService[Project, ProjectCreate, ProjectUpdate]):
                     detail=f"Client with id {obj_in.client_id} not found"
                 )
         return super().update(db, id, obj_in)
+
+    def delete(self, db: Session, id: int) -> bool:
+        """
+        Elimina un progetto solo se non ha:
+        - Time entries associate
+        - Resource allocations attive 
+        - Fatture
+        """
+        project = db.query(self.model).filter(self.model.id == id).first()
+        if not project:
+            return False
+
+        # Controlla time entries
+        if project.time_entries:
+            raise HTTPException(
+                status_code=400,
+                detail="Impossibile eliminare il progetto: esistono time entries associate"
+            )
+
+        # Controlla allocations
+        if project.allocations:
+            raise HTTPException(
+                status_code=400,
+                detail="Impossibile eliminare il progetto: esistono resource allocations associate"
+            )
+
+        # Controlla fatture
+        if project.invoices:
+            raise HTTPException(
+                status_code=400,
+                detail="Impossibile eliminare il progetto: esistono fatture associate"
+            )
+
+        db.delete(project)
+        db.commit()
+        return True
