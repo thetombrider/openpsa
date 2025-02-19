@@ -1,7 +1,7 @@
 # src/schemas/consultant_role.py
-from pydantic import BaseModel, ConfigDict
 from datetime import datetime
 from typing import Optional
+from pydantic import BaseModel, Field
 
 class ConsultantRoleBase(BaseModel):
     name: str
@@ -10,8 +10,12 @@ class ConsultantRoleBase(BaseModel):
 class ConsultantRoleCreate(ConsultantRoleBase):
     pass
 
+class ConsultantRoleUpdate(ConsultantRoleBase):
+    pass
+
 class ConsultantRoleResponse(ConsultantRoleBase):
     id: int
     created_at: datetime
-
-    model_config = ConfigDict(from_attributes=True)
+    
+    class Config:
+        from_attributes = True  # precedentemente orm_mode = True

@@ -44,7 +44,7 @@ class ConsultantRole(Base):
     id = Column(Integer, primary_key=True)
     name = Column(String, nullable=False, unique=True)
     description = Column(String)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, nullable=False, server_default='CURRENT_TIMESTAMP')
     
     # Relazioni
     project_users = relationship("ProjectUser", back_populates="role")
