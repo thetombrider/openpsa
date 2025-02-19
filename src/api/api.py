@@ -79,18 +79,19 @@ def custom_openapi():
 app.openapi = custom_openapi
 
 # Inclusione dei router
+app.include_router(auth_router, prefix="/api/v1/auth", tags=["Authentication"])
 app.include_router(projects_router, prefix="/api/v1/projects", tags=["Projects"])
 app.include_router(users_router, prefix="/api/v1/users", tags=["Users"])
-app.include_router(time_entries_router, prefix="/api/v1/time-entries", tags=["Time Entries"])
-app.include_router(invoices_router, prefix="/api/v1/invoices", tags=["Invoices"])
-app.include_router(allocations_router, prefix="/api/v1/allocations", tags=["Resource Allocations"])
-app.include_router(line_items_router, prefix="/api/v1/line-items", tags=["Invoice Line Items"])
 app.include_router(clients_router, prefix="/api/v1/clients", tags=["Clients"])
-app.include_router(auth_router, prefix="/api/v1/auth", tags=["Authentication"])
-app.include_router(utils_router, prefix="/api/v1/utils", tags=["Utilities"])
+app.include_router(allocations_router, prefix="/api/v1/allocations", tags=["Resource Allocations"])
+app.include_router(time_entries_router, prefix="/api/v1/time-entries", tags=["Time Entries"])
 app.include_router(roles_router, prefix="/api/v1/consultant-roles", tags=["Consultant Roles"])
 app.include_router(rates_router, prefix="/api/v1/rates", tags=["Rates"])
 app.include_router(teams_router, prefix="/api/v1/teams", tags=["Teams"])
+app.include_router(invoices_router, prefix="/api/v1/invoices", tags=["Invoices"])
+app.include_router(line_items_router, prefix="/api/v1/line-items", tags=["Invoice Line Items"])
+app.include_router(utils_router, prefix="/api/v1/utils", tags=["Utilities"])
+
 
 @app.get("/")
 async def root():

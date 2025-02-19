@@ -1,8 +1,8 @@
 # src/schemas/rate.py
-from pydantic import BaseModel
-from pydantic.types import Decimal
+from pydantic import BaseModel, ConfigDict
 from datetime import date, datetime
 from typing import Optional
+from decimal import Decimal
 
 class RateBase(BaseModel):
     name: str
@@ -21,6 +21,5 @@ class BillingRateCreate(RateBase):
 class RateResponse(RateBase):
     id: int
     created_at: datetime
-    
-    class Config:
-        orm_mode = True
+
+    model_config = ConfigDict(from_attributes=True)

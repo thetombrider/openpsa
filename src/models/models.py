@@ -1,9 +1,11 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Float, Enum, Date, Numeric, Boolean, Index
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Float, Enum, Date, Numeric, Boolean, Index, Table
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import DeclarativeBase, relationship, validates
 from datetime import date
 from datetime import datetime
 import enum
+from sqlalchemy import Enum as SQLAlchemyEnum
+from src.schemas.enums import ResourceAllocationStatus
 
 class Base (DeclarativeBase):
     pass
@@ -59,17 +61,19 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     
     time_entries = relationship("TimeEntry", back_populates="user")
-    projects = relationship(
-        "Project", 
-        secondary="project_users",
-        back_populates="users",
-        viewonly=True
-    )
     allocations = relationship("ResourceAllocation", back_populates="user")
     billing_rates = relationship("UserBillingRate", back_populates="user")
     cost_rates = relationship("UserCostRate", back_populates="user")
     project_users = relationship("ProjectUser", back_populates="user")
     team_memberships = relationship("TeamMember", back_populates="user")
+    
+    # Relazione many-to-many con Project attraverso ProjectUser
+    projects = relationship(
+        "Project",
+        secondary="project_users",
+        viewonly=True,  # Questa è importante
+        back_populates="users"
+    )
 
 class Client(Base):
     __tablename__ = "clients"
@@ -85,13 +89,25 @@ class Client(Base):
 class ProjectUser(Base):
     __tablename__ = "project_users"
     
-    project_id = Column(Integer, ForeignKey("projects.id"), primary_key=True)
-    user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
-    role = Column(Enum(ConsultantRoleEnum), nullable=True)
+    id = Column(Integer, primary_key=True)
+    project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    role_id = Column(Integer, ForeignKey("consultant_roles.id"))  # Rinominato da role a role_id
     
-    # Modifica qui: project_links -> project_users
+    # Relazioni
     project = relationship("Project", back_populates="project_users")
     user = relationship("User", back_populates="project_users")
+    role = relationship("ConsultantRole", back_populates="project_users")
+
+# Tabella di associazione per project_billing_rates
+project_billing_rates = Table(
+    'project_billing_rates', 
+    Base.metadata,
+    Column('project_id', Integer, ForeignKey('projects.id', ondelete='CASCADE')),
+    Column('billing_rate_id', Integer, ForeignKey('billing_rates.id', ondelete='CASCADE')),
+    Column('created_at', DateTime, default=datetime.utcnow),
+    Column('active', Boolean, default=True)
+)
 
 class Project(Base):
     __tablename__ = "projects"
@@ -111,14 +127,7 @@ class Project(Base):
     
     client = relationship("Client", back_populates="projects")
     time_entries = relationship("TimeEntry", back_populates="project", cascade="all, delete-orphan")
-    users = relationship(
-        "User",
-        secondary="project_users",
-        back_populates="projects",
-        viewonly=True
-    )
     allocations = relationship("ResourceAllocation", back_populates="project")
-    billing_rates = relationship("BillingRate", back_populates="project")
     invoices = relationship("Invoice", back_populates="project", cascade="all, delete-orphan")
     project_users = relationship("ProjectUser", back_populates="project")
     team = relationship("Team", back_populates="projects")
@@ -128,6 +137,21 @@ class Project(Base):
         if value and self.start_date and value < self.start_date:
             raise ValueError("End date must be after start date")
         return value
+    
+    # Relazione many-to-many con User attraverso ProjectUser
+    users = relationship(
+        "User",
+        secondary="project_users",
+        viewonly=True,  # Questa è importante
+        back_populates="projects"
+    )
+
+    # Aggiungi la relazione many-to-many
+    billing_rates = relationship(
+        "BillingRate",
+        secondary=project_billing_rates,
+        back_populates="projects"
+    )
 
 class TimeEntry(Base):
     __tablename__ = "time_entries"
@@ -163,14 +187,15 @@ class ResourceAllocation(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
     project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
-    start_date = Column(Date, nullable=False)
-    end_date = Column(Date, nullable=False)
-    allocation_percentage = Column(Float, nullable=False)
-    role = Column(Enum(ConsultantRoleEnum), nullable=True)  # Modifica qui
-    status = Column(Enum(ResourceAllocationStatus), nullable=False)
+    role_id = Column(Integer, ForeignKey("consultant_roles.id"))  # Rinominato da role a role_id
+    status = Column(SQLAlchemyEnum(ResourceAllocationStatus), nullable=False, 
+                   default=ResourceAllocationStatus.PLANNED)
+    created_at = Column(DateTime, default=datetime.utcnow)
     
+    # Relazioni
     user = relationship("User", back_populates="allocations")
     project = relationship("Project", back_populates="allocations")
+    role = relationship("ConsultantRole", back_populates="resource_allocations")
 
     @validates('allocation_percentage')
     def validate_allocation(self, key, value):
@@ -192,7 +217,13 @@ class BillingRate(Base):
     
     # Relazioni
     user_billing_rates = relationship("UserBillingRate", back_populates="billing_rate")
-    project = relationship("Project", back_populates="billing_rates")
+
+    # Aggiungi la relazione inversa
+    projects = relationship(
+        "Project",
+        secondary=project_billing_rates,
+        back_populates="billing_rates"
+    )
 
 class CostRate(Base):
     __tablename__ = "cost_rates"
