@@ -29,12 +29,24 @@ class BillingType(enum.Enum):
     TIME_AND_MATERIALS = "TIME_AND_MATERIALS"
     FIXED_PRICE = "FIXED_PRICE"
 
-class ConsultantRole(enum.Enum):
+class ConsultantRoleEnum(enum.Enum):
     JUNIOR = "JUNIOR"
     MID = "MID"
     SENIOR = "SENIOR"
     MASTER = "MASTER"
     PRINCIPAL = "PRINCIPAL"
+
+class ConsultantRole(Base):
+    __tablename__ = "consultant_roles"
+    
+    id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False, unique=True)
+    description = Column(String)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relazioni
+    project_users = relationship("ProjectUser", back_populates="role")
+    resource_allocations = relationship("ResourceAllocation", back_populates="role")
 
 class User(Base):
     __tablename__ = "users"
@@ -44,7 +56,6 @@ class User(Base):
     name = Column(String, nullable=False)
     password_hash = Column(String, nullable=False)  # Aggiungi questo
     role = Column(Enum(UserRole), nullable=False)
-    hourly_rate = Column(Float)
     created_at = Column(DateTime, default=datetime.utcnow)
     
     time_entries = relationship("TimeEntry", back_populates="user")
@@ -55,8 +66,10 @@ class User(Base):
         viewonly=True
     )
     allocations = relationship("ResourceAllocation", back_populates="user")
-    billing_rates = relationship("BillingRate", back_populates="user")
+    billing_rates = relationship("UserBillingRate", back_populates="user")
+    cost_rates = relationship("UserCostRate", back_populates="user")
     project_users = relationship("ProjectUser", back_populates="user")
+    team_memberships = relationship("TeamMember", back_populates="user")
 
 class Client(Base):
     __tablename__ = "clients"
@@ -74,7 +87,7 @@ class ProjectUser(Base):
     
     project_id = Column(Integer, ForeignKey("projects.id"), primary_key=True)
     user_id = Column(Integer, ForeignKey("users.id"), primary_key=True)
-    role = Column(Enum(ConsultantRole), nullable=True)
+    role = Column(Enum(ConsultantRoleEnum), nullable=True)
     
     # Modifica qui: project_links -> project_users
     project = relationship("Project", back_populates="project_users")
@@ -94,6 +107,7 @@ class Project(Base):
     billing_type = Column(Enum(BillingType), nullable=False)
     billing_currency = Column(String, default="EUR")
     billing_notes = Column(String)
+    team_id = Column(Integer, ForeignKey("teams.id"))
     
     client = relationship("Client", back_populates="projects")
     time_entries = relationship("TimeEntry", back_populates="project", cascade="all, delete-orphan")
@@ -107,6 +121,7 @@ class Project(Base):
     billing_rates = relationship("BillingRate", back_populates="project")
     invoices = relationship("Invoice", back_populates="project", cascade="all, delete-orphan")
     project_users = relationship("ProjectUser", back_populates="project")
+    team = relationship("Team", back_populates="projects")
 
     @validates('end_date')
     def validate_end_date(self, key, value):
@@ -151,7 +166,7 @@ class ResourceAllocation(Base):
     start_date = Column(Date, nullable=False)
     end_date = Column(Date, nullable=False)
     allocation_percentage = Column(Float, nullable=False)
-    role = Column(Enum(ConsultantRole), nullable=True)  # Modifica qui
+    role = Column(Enum(ConsultantRoleEnum), nullable=True)  # Modifica qui
     status = Column(Enum(ResourceAllocationStatus), nullable=False)
     
     user = relationship("User", back_populates="allocations")
@@ -167,14 +182,58 @@ class BillingRate(Base):
     __tablename__ = "billing_rates"
     
     id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, ForeignKey("users.id"))
-    project_id = Column(Integer, ForeignKey("projects.id"))
-    rate = Column(Numeric(10, 2), nullable=False)  # Tariffa oraria
-    start_date = Column(Date, nullable=False)
-    end_date = Column(Date)  # NULL significa "ancora attivo"
+    name = Column(String, nullable=False)
+    description = Column(String)
+    rate = Column(Numeric(10, 2), nullable=False)
+    currency = Column(String, default="EUR")
+    valid_from = Column(Date, nullable=False)
+    valid_to = Column(Date)
+    created_at = Column(DateTime, default=datetime.utcnow)
     
-    user = relationship("User", back_populates="billing_rates")
+    # Relazioni
+    user_billing_rates = relationship("UserBillingRate", back_populates="billing_rate")
     project = relationship("Project", back_populates="billing_rates")
+
+class CostRate(Base):
+    __tablename__ = "cost_rates"
+    
+    id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False)
+    description = Column(String)
+    rate = Column(Numeric(10, 2), nullable=False)
+    currency = Column(String, default="EUR")
+    valid_from = Column(Date, nullable=False)
+    valid_to = Column(Date)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relazioni
+    user_cost_rates = relationship("UserCostRate", back_populates="cost_rate")
+
+class UserCostRate(Base):
+    __tablename__ = "user_cost_rates"
+    
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    cost_rate_id = Column(Integer, ForeignKey("cost_rates.id"), nullable=False)
+    valid_from = Column(Date, nullable=False)
+    valid_to = Column(Date)
+    
+    # Relazioni
+    user = relationship("User", back_populates="cost_rates")
+    cost_rate = relationship("CostRate", back_populates="user_cost_rates")
+
+class UserBillingRate(Base):
+    __tablename__ = "user_billing_rates"
+    
+    id = Column(Integer, primary_key=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    billing_rate_id = Column(Integer, ForeignKey("billing_rates.id"), nullable=False)
+    valid_from = Column(Date, nullable=False)
+    valid_to = Column(Date)
+    
+    # Relazioni
+    user = relationship("User", back_populates="billing_rates")
+    billing_rate = relationship("BillingRate", back_populates="user_billing_rates")
 
 class Invoice(Base):
     __tablename__ = "invoices"
@@ -236,3 +295,30 @@ class LineItemTimeEntry(Base):
 
     line_item = relationship("InvoiceLineItem", back_populates="time_entry_links")
     time_entry = relationship("TimeEntry", back_populates="line_item_links")
+
+class Team(Base):
+    __tablename__ = "teams"
+    
+    id = Column(Integer, primary_key=True)
+    name = Column(String, nullable=False)
+    description = Column(String)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    
+    # Relazioni
+    members = relationship("TeamMember", back_populates="team")
+    projects = relationship("Project", back_populates="team")
+
+class TeamMember(Base):
+    __tablename__ = "team_members"
+    
+    id = Column(Integer, primary_key=True)
+    team_id = Column(Integer, ForeignKey("teams.id"), nullable=False)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    role_id = Column(Integer, ForeignKey("consultant_roles.id"))
+    join_date = Column(Date, nullable=False)
+    leave_date = Column(Date)
+    
+    # Relazioni
+    team = relationship("Team", back_populates="members")
+    user = relationship("User", back_populates="team_memberships")
+    role = relationship("ConsultantRole")
