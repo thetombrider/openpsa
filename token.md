@@ -1,7 +1,7 @@
-tommasominuto@gmail.com
+tommasominuto@gmail.com - ADMIN
 
 {
-  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0b21tYXNvbWludXRvQGdtYWlsLmNvbSIsInJvbGUiOiJBRE1JTiIsImV4cCI6MTczOTg5NDk0Nn0.yRbrnRBhDysGzXXvVfH78auUDaXWls435NW5FcEqyec",
-  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0b21tYXNvbWludXRvQGdtYWlsLmNvbSIsInJvbGUiOiJBRE1JTiIsImV4cCI6MTc0MDQ5MzY1MSwidG9rZW5fdHlwZSI6InJlZnJlc2gifQ.pwzwMSAHkOUqtal6hYyvguf9tW2aNOuLYU8BOF12tUw",
+  "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0b21tYXNvbWludXRvQGdtYWlsLmNvbSIsInJvbGUiOiJBRE1JTiIsImV4cCI6MTczOTk4NjUyNn0.TmB1TyL41fBYEZ_gftygKmWG0aeSlx9I5pP0QjlHGVY",
+  "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJ0b21tYXNvbWludXRvQGdtYWlsLmNvbSIsInJvbGUiOiJBRE1JTiIsImV4cCI6MTc0MDU4NDEyNiwidG9rZW5fdHlwZSI6InJlZnJlc2gifQ.xoYYp89vMVDG0Gx8l_IW2ybQSbJSFn767lnays4U-fU",
   "token_type": "bearer"
 }

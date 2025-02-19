@@ -1,0 +1,220 @@
+{
+  "info": {
+    "name": "OpenPSA API",
+    "description": "Collection per testare le API di OpenPSA",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{access_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000/api/v1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/auth/token",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": {
+                "email": "admin@example.com",
+                "password": "admin123"
+              }
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/auth/refresh",
+            "body": {
+              "mode": "raw",
+              "raw": {
+                "token": "{{refresh_token}}"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Projects",
+      "item": [
+        {
+          "name": "List Projects",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/projects"
+          }
+        },
+        {
+          "name": "Create Project",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/projects",
+            "body": {
+              "mode": "raw",
+              "raw": {
+                "name": "Nuovo Progetto",
+                "description": "Descrizione del progetto",
+                "client_id": 1,
+                "start_date": "2024-02-19T00:00:00Z",
+                "end_date": "2024-03-19T00:00:00Z",
+                "budget": 10000,
+                "status": "DRAFT",
+                "billing_type": "TIME_AND_MATERIALS",
+                "billing_currency": "EUR"
+              }
+            }
+          }
+        },
+        {
+          "name": "Get Project",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/projects/{{project_id}}"
+          }
+        },
+        {
+          "name": "Update Project",
+          "request": {
+            "method": "PUT",
+            "url": "{{base_url}}/projects/{{project_id}}",
+            "body": {
+              "mode": "raw",
+              "raw": {
+                "name": "Progetto Aggiornato",
+                "status": "ACTIVE"
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "List Users",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/users"
+          }
+        },
+        {
+          "name": "Get Consultants",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/users/consultants"
+          }
+        },
+        {
+          "name": "Create User",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/users",
+            "body": {
+              "mode": "raw",
+              "raw": {
+                "email": "nuovo@example.com",
+                "name": "Nuovo Utente",
+                "password": "password123",
+                "role": "CONSULTANT",
+                "hourly_rate": 50
+              }
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Time Entries",
+      "item": [
+        {
+          "name": "Create Time Entry",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/time-entries",
+            "body": {
+              "mode": "raw",
+              "raw": {
+                "user_id": 1,
+                "project_id": 1,
+                "date": "2024-02-19T09:00:00Z",
+                "hours": 8,
+                "description": "Sviluppo feature"
+              }
+            }
+          }
+        },
+        {
+          "name": "Get User Time Entries",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/time-entries/user/{{user_id}}",
+            "query": [
+              {
+                "key": "start_date",
+                "value": "2024-02-01"
+              },
+              {
+                "key": "end_date",
+                "value": "2024-02-29"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Clients",
+      "item": [
+        {
+          "name": "List Clients",
+          "request": {
+            "method": "GET",
+            "url": "{{base_url}}/clients"
+          }
+        },
+        {
+          "name": "Create Client",
+          "request": {
+            "method": "POST",
+            "url": "{{base_url}}/clients",
+            "body": {
+              "mode": "raw",
+              "raw": {
+                "name": "Nuovo Cliente",
+                "contact_email": "cliente@example.com",
+                "contact_phone": "+39123456789"
+              }
+            }
+          }
+        }
+      ]
+    }
+  ]
+}
