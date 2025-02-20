@@ -56,18 +56,9 @@ class UserService(BaseService[User, UserCreate, UserUpdate]):
                 .first()
             
             if user:
-                # Ottiene i rate correnti attraverso le proprietà
-                current_billing = user.current_billing_rate
-                current_cost = user.current_cost_rate
-
-                # Imposta i valori numerici del rate
-                user.current_billing_rate = float(
-                    current_billing.billing_rate.rate
-                ) if current_billing else None
-                
-                user.current_cost_rate = float(
-                    current_cost.cost_rate.rate
-                ) if current_cost else None
+                # I rate verranno calcolati automaticamente dalle property
+                # quando verranno richiesti dal serializer
+                pass
                 
             return user
             

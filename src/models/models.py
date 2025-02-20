@@ -1,11 +1,13 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Float, Enum, Date, Numeric, Boolean, Index, Table
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Float, Enum, Date, Numeric, Boolean, Index, Table, func
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import DeclarativeBase, relationship, validates
+from sqlalchemy.orm import DeclarativeBase, relationship, validates, Mapped
 from datetime import date
 from datetime import datetime
 import enum
 from sqlalchemy import Enum as SQLAlchemyEnum
 from src.schemas.enums import ResourceAllocationStatus
+from typing import Optional, ClassVar
+from decimal import Decimal
 
 class Base (DeclarativeBase):
     pass
@@ -53,71 +55,76 @@ class ConsultantRole(Base):
 class User(Base):
     __tablename__ = "users"
     
-    id = Column(Integer, primary_key=True)
-    email = Column(String, unique=True, nullable=False)
-    name = Column(String, nullable=False)
-    password_hash = Column(String, nullable=False)  # Aggiungi questo
-    role = Column(Enum(UserRole), nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    id: Mapped[int] = Column(Integer, primary_key=True)
+    email: Mapped[str] = Column(String, unique=True, nullable=False)
+    name: Mapped[str] = Column(String)
+    role: Mapped[str] = Column(String, nullable=False)
+    created_at: Mapped[datetime] = Column(DateTime, server_default=func.now())
     
-    time_entries = relationship("TimeEntry", back_populates="user")
-    allocations = relationship("ResourceAllocation", back_populates="user")
-    billing_rates = relationship("UserBillingRate", back_populates="user")
-    cost_rates = relationship("UserCostRate", back_populates="user")
+    # Campi privati per caching - non mappati nel DB
+    _current_billing_rate: ClassVar[Optional[float]] = None
+    _current_cost_rate: ClassVar[Optional[float]] = None
+    
+    # Relazioni corrette
+    user_billing_rates = relationship(
+        "UserBillingRate",
+        back_populates="user"
+    )
+    user_cost_rates = relationship(
+        "UserCostRate",
+        back_populates="user"
+    )
+    # Aggiungi queste relazioni
     project_users = relationship("ProjectUser", back_populates="user")
-    team_memberships = relationship("TeamMember", back_populates="user")
-    
-    # Relazione many-to-many con Project attraverso ProjectUser
     projects = relationship(
         "Project",
         secondary="project_users",
-        viewonly=True,  # Questa è importante
-        back_populates="users"
+        back_populates="users",
+        viewonly=True
     )
-
-    user_billing_rates = relationship(
-        "UserBillingRate",
-        back_populates="user",
-        overlaps="billing_rates"
-    )
-    
-    user_cost_rates = relationship(
-        "UserCostRate",
-        back_populates="user",
-        overlaps="cost_rates"
-    )
+    allocations = relationship("ResourceAllocation", back_populates="user")
+    time_entries = relationship("TimeEntry", back_populates="user")
+    team_memberships = relationship("TeamMember", back_populates="user")
     
     @property
-    def current_billing_rate(self):
-        """Restituisce il billing rate attivo"""
-        from datetime import date
+    def current_billing_rate(self) -> Optional[float]:
+        if self._current_billing_rate is not None:
+            return self._current_billing_rate
+            
         today = date.today()
-        current_rate = (
-            rate for rate in sorted(
+        current_rate = next(
+            (rate for rate in sorted(
                 self.user_billing_rates,
                 key=lambda x: x.valid_from,
                 reverse=True
             )
             if rate.valid_from <= today 
             and (rate.valid_to is None or rate.valid_to >= today)
+            ),
+            None
         )
-        return next(current_rate, None)
+        self._current_billing_rate = float(current_rate.billing_rate.rate) if current_rate else None
+        return self._current_billing_rate
     
     @property
-    def current_cost_rate(self):
-        """Restituisce il cost rate attivo"""
-        from datetime import date
+    def current_cost_rate(self) -> Optional[float]:
+        if self._current_cost_rate is not None:
+            return self._current_cost_rate
+            
         today = date.today()
-        current_rate = (
-            rate for rate in sorted(
+        current_rate = next(
+            (rate for rate in sorted(
                 self.user_cost_rates,
                 key=lambda x: x.valid_from,
                 reverse=True
             )
             if rate.valid_from <= today 
             and (rate.valid_to is None or rate.valid_to >= today)
+            ),
+            None
         )
-        return next(current_rate, None)
+        self._current_cost_rate = float(current_rate.cost_rate.rate) if current_rate else None
+        return self._current_cost_rate
 
 class Client(Base):
     __tablename__ = "clients"
@@ -293,8 +300,8 @@ class UserCostRate(Base):
     valid_from = Column(Date, nullable=False)
     valid_to = Column(Date)
     
-    # Relazioni
-    user = relationship("User", back_populates="cost_rates")
+    # Correzione della relazione
+    user = relationship("User", back_populates="user_cost_rates")
     cost_rate = relationship("CostRate", back_populates="user_cost_rates")
 
 class UserBillingRate(Base):
@@ -306,8 +313,8 @@ class UserBillingRate(Base):
     valid_from = Column(Date, nullable=False)
     valid_to = Column(Date)
     
-    # Relazioni
-    user = relationship("User", back_populates="billing_rates")
+    # Correzione della relazione
+    user = relationship("User", back_populates="user_billing_rates")
     billing_rate = relationship("BillingRate", back_populates="user_billing_rates")
 
 class Invoice(Base):
