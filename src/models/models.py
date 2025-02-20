@@ -75,6 +75,50 @@ class User(Base):
         back_populates="users"
     )
 
+    user_billing_rates = relationship(
+        "UserBillingRate",
+        back_populates="user",
+        overlaps="billing_rates"
+    )
+    
+    user_cost_rates = relationship(
+        "UserCostRate",
+        back_populates="user",
+        overlaps="cost_rates"
+    )
+    
+    @property
+    def current_billing_rate(self):
+        """Restituisce il billing rate attivo"""
+        from datetime import date
+        today = date.today()
+        current_rate = (
+            rate for rate in sorted(
+                self.user_billing_rates,
+                key=lambda x: x.valid_from,
+                reverse=True
+            )
+            if rate.valid_from <= today 
+            and (rate.valid_to is None or rate.valid_to >= today)
+        )
+        return next(current_rate, None)
+    
+    @property
+    def current_cost_rate(self):
+        """Restituisce il cost rate attivo"""
+        from datetime import date
+        today = date.today()
+        current_rate = (
+            rate for rate in sorted(
+                self.user_cost_rates,
+                key=lambda x: x.valid_from,
+                reverse=True
+            )
+            if rate.valid_from <= today 
+            and (rate.valid_to is None or rate.valid_to >= today)
+        )
+        return next(current_rate, None)
+
 class Client(Base):
     __tablename__ = "clients"
     
@@ -334,8 +378,17 @@ class LineItemTimeEntry(Base):
     line_item_id = Column(Integer, ForeignKey("invoice_line_items.id"), primary_key=True)
     time_entry_id = Column(Integer, ForeignKey("time_entries.id"), primary_key=True)
 
-    line_item = relationship("InvoiceLineItem", back_populates="time_entry_links")
-    time_entry = relationship("TimeEntry", back_populates="line_item_links")
+    line_item = relationship(
+        "InvoiceLineItem",
+        back_populates="time_entry_links",
+        overlaps="invoice_line_items,time_entries"
+    )
+    
+    time_entry = relationship(
+        "TimeEntry",
+        back_populates="line_item_links",
+        overlaps="invoice_line_items,time_entries"
+    )
 
 class Team(Base):
     __tablename__ = "teams"

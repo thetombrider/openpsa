@@ -21,11 +21,12 @@ class UserUpdate(BaseModel):
 
 class UserResponse(BaseModel):
     id: int
-    email: EmailStr
+    email: str
     name: str
     role: UserRole
-    hourly_rate: Optional[float] = None
-    created_at: Optional[datetime] = None
+    created_at: datetime
+    current_billing_rate: Optional[float] = None
+    current_cost_rate: Optional[float] = None
     
     class Config:
         from_attributes = True

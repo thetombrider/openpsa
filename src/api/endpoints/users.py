@@ -38,25 +38,12 @@ async def get_user(
     request: Request,
     db: Session = Depends(get_db)
 ):
-    """
-    Recupera un utente specifico tramite il suo ID.
-    
-    Args:
-        user_id: ID dell'utente da recuperare
-        
-    Raises:
-        HTTPException: 404 se l'utente non esiste
-    """
-    print(f"GET /users/{user_id} - Auth User: {request.state.user.email}")
-    
     user = service.get(db, user_id)
     if not user:
         raise HTTPException(
-            status_code=404,  # Non 401
+            status_code=404,
             detail=f"Utente {user_id} non trovato"
         )
-        
-    print(f"Found user: {user.email}")
     return user
 
 @router.put("/{user_id}", response_model=UserUpdateResponse)

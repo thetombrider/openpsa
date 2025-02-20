@@ -1,11 +1,14 @@
 from typing import List, Optional
 from sqlalchemy.orm import Session, joinedload
-from src.models.models import User, UserRole
+from src.models.models import User, UserRole, UserBillingRate, UserCostRate
 from src.schemas.user import UserCreate, UserUpdate
 from src.services.base import BaseService
 from src.auth.security import get_password_hash
 from fastapi.encoders import jsonable_encoder
 from fastapi import HTTPException
+import logging
+
+logger = logging.getLogger(__name__)
 
 class UserService(BaseService[User, UserCreate, UserUpdate]):
     def __init__(self):
@@ -43,11 +46,37 @@ class UserService(BaseService[User, UserCreate, UserUpdate]):
         return db_user
 
     def get(self, db: Session, id: int) -> Optional[User]:
-        """Override del metodo get per aggiungere logging"""
-        user = db.query(self.model).filter(self.model.id == id).first()
-        if not user:
-            print(f"User {id} not found in database")  # Debug log
-        return user
+        try:
+            user = db.query(self.model)\
+                .options(
+                    joinedload(User.user_billing_rates).joinedload(UserBillingRate.billing_rate),
+                    joinedload(User.user_cost_rates).joinedload(UserCostRate.cost_rate)
+                )\
+                .filter(self.model.id == id)\
+                .first()
+            
+            if user:
+                # Ottiene i rate correnti attraverso le proprietà
+                current_billing = user.current_billing_rate
+                current_cost = user.current_cost_rate
+
+                # Imposta i valori numerici del rate
+                user.current_billing_rate = float(
+                    current_billing.billing_rate.rate
+                ) if current_billing else None
+                
+                user.current_cost_rate = float(
+                    current_cost.cost_rate.rate
+                ) if current_cost else None
+                
+            return user
+            
+        except Exception as e:
+            logger.error(f"Errore nel recupero dell'utente: {str(e)}")
+            raise HTTPException(
+                status_code=500,
+                detail="Errore interno nel recupero dell'utente"
+            )
 
     def update(self, db: Session, id: int, user_in: UserUpdate) -> Optional[User]:
         """
