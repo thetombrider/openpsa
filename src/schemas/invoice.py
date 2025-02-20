@@ -9,6 +9,18 @@ class InvoiceLineItemBase(BaseModel):
     rate: Decimal = Field(gt=0, description="Deve essere maggiore di zero")
 
 class InvoiceLineItemCreate(InvoiceLineItemBase):
+    billing_rate_id: Optional[int] = None
+    description: str
+    quantity: Decimal
+    rate: Optional[Decimal] = None  # Opzionale se viene preso da billing_rate
+
+    @field_validator('rate')
+    @classmethod
+    def validate_rate(cls, v: Optional[Decimal], info: ValidationInfo) -> Decimal:
+        if v is None and info.data.get('billing_rate_id') is None:
+            raise ValueError("Devi specificare o rate o billing_rate_id")
+        return v
+
     @field_validator('quantity')
     @classmethod
     def validate_time_entries(cls, v: float, info: ValidationInfo) -> float:

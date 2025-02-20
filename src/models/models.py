@@ -302,6 +302,16 @@ class InvoiceLineItem(Base):
     quantity = Column(Numeric(10, 2))
     rate = Column(Numeric(10, 2))
     amount = Column(Numeric(10, 2))
+    billing_rate_id = Column(Integer, ForeignKey("billing_rates.id"))
+    billing_rate = relationship("BillingRate", backref="line_items")
+    rate_at_creation = Column(Numeric(10, 2))
+    currency_at_creation = Column(String)
+    
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+        if self.billing_rate:
+            self.rate_at_creation = self.billing_rate.rate
+            self.currency_at_creation = self.billing_rate.currency
     
     time_entry_links = relationship(
         "LineItemTimeEntry",

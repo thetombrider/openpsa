@@ -23,3 +23,9 @@ class RateResponse(RateBase):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+class UserRateAssign(BaseModel):
+    user_id: int
+    rate_id: int
+    valid_from: date
+    valid_to: Optional[date] = None

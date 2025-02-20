@@ -1,8 +1,9 @@
 from decimal import Decimal
 from typing import List
 from sqlalchemy.orm import Session
-from src.models.models import InvoiceLineItem
-from src.schemas.invoice import InvoiceLineItemBase
+from src.models.models import InvoiceLineItem, BillingRate
+from fastapi import HTTPException
+from src.schemas.invoice import InvoiceLineItemBase, InvoiceLineItemCreate
 from src.services.base import BaseService
 
 class LineItemService(BaseService[InvoiceLineItem, InvoiceLineItemBase, InvoiceLineItemBase]):
@@ -34,11 +35,20 @@ class LineItemService(BaseService[InvoiceLineItem, InvoiceLineItemBase, InvoiceL
             db.refresh(item)
         return db_items
 
-    def create(self, db: Session, obj_in: InvoiceLineItemBase) -> InvoiceLineItem:
-        """Crea un line item calcolando automaticamente l'amount"""
+    def create(self, db: Session, obj_in: InvoiceLineItemCreate) -> InvoiceLineItem:
         obj_data = obj_in.model_dump()
         
-        # Calcola l'amount dal rate e quantity
+        # Se c'è un billing_rate_id, usa quel rate
+        if obj_data.get('billing_rate_id'):
+            billing_rate = db.query(BillingRate).get(obj_data['billing_rate_id'])
+            if not billing_rate:
+                raise HTTPException(
+                    status_code=404,
+                    detail="BillingRate non trovato"
+                )
+            obj_data['rate'] = billing_rate.rate
+        
+        # Calcola l'amount
         amount = Decimal(str(obj_data["quantity"])) * Decimal(str(obj_data["rate"]))
         obj_data["amount"] = amount
         
