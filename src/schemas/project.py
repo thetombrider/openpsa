@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from datetime import datetime
 from typing import Optional, List
 from src.models.models import ProjectStatus, BillingType
@@ -29,6 +29,12 @@ class ProjectUpdate(BaseModel):
     billing_type: Optional[BillingType] = None
     billing_currency: Optional[str] = None
     billing_notes: Optional[str] = None
+
+    @field_validator('client_id')
+    def validate_client_id(cls, v):
+        if v is not None and v <= 0:
+            raise ValueError("client_id deve essere maggiore di 0")
+        return v
 
 class ProjectResponse(ProjectBase):
     id: int

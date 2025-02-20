@@ -39,10 +39,18 @@ async def update_project(
     project: ProjectUpdate,
     db: Session = Depends(get_db)
 ):
-    updated_project = service.update(db, project_id, project)
-    if not updated_project:
-        raise HTTPException(status_code=404, detail="Project not found")
-    return updated_project
+    try:
+        updated_project = service.update(db, project_id, project)
+        if not updated_project:
+            raise HTTPException(status_code=404, detail="Progetto non trovato")
+        return updated_project
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Errore nell'aggiornamento del progetto: {str(e)}"
+        )
 
 @router.delete("/{project_id}")
 async def delete_project(

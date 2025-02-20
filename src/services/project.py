@@ -23,14 +23,15 @@ class ProjectService(BaseService[Project, ProjectCreate, ProjectUpdate]):
             .first()
     
     def update(self, db: Session, id: int, obj_in: ProjectUpdate) -> Optional[Project]:
-        # Verifica esistenza client
-        if obj_in.client_id:
+        # Valida client_id se presente
+        if obj_in.client_id is not None:
             client = db.query(Client).filter(Client.id == obj_in.client_id).first()
             if not client:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Client with id {obj_in.client_id} not found"
+                    detail=f"Client con ID {obj_in.client_id} non trovato"
                 )
+        
         return super().update(db, id, obj_in)
 
     def delete(self, db: Session, id: int) -> bool:

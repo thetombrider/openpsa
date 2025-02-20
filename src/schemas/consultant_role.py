@@ -10,12 +10,13 @@ class ConsultantRoleBase(BaseModel):
 class ConsultantRoleCreate(ConsultantRoleBase):
     pass
 
-class ConsultantRoleUpdate(ConsultantRoleBase):
-    pass
+class ConsultantRoleUpdate(BaseModel):
+    name: Optional[str] = None
+    description: Optional[str] = None
 
 class ConsultantRoleResponse(ConsultantRoleBase):
     id: int
     created_at: datetime
     
     class Config:
-        from_attributes = True  # precedentemente orm_mode = True
+        from_attributes = True
